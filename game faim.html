@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="title">Caza Estrellas</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    overflow: hidden; /* Evita el desplazamiento de la página */
+}
+
+#startMenu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8); /* Fondo semi-transparente */
+    z-index: 999; /* Encima de todo */
+}
+
+#menuTitle {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+#startMenu button {
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    background-color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#game {
+    display: none; /* Ocultar el juego al principio */
+    position: relative;
+    width: 100vw; /* Usa toda la vista de la ventana */
+    height: 100vh; /* Usa toda la vista de la ventana */
+    background-color: #000;
+    border-bottom: 2px solid #fff; /* Línea blanca en la parte inferior */
+}
+
+#player {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #fff;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#stars {
+    position: absolute;
+}
+
+.star {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #ffff00;
+    border-radius: 50%;
+}
+
+#obstacles {
+    position: absolute;
+}
+
+.obstacle {
+    position: absolute;
+    background-color: #ff0000;
+}
+
+#bottomLine {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background-color: #fff;
+    bottom: 0;
+}
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: #fff;
+}
+
+#lives {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #fff;
+}
+
+#gameOver {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 24px;
+}
+  
+    </style>
+</head>
+<body>
+    <div id="startMenu">
+        <h1 id="menuTitle">Selecciona la dificultad</h1>
+        <button id="easyBtn">Fácil</button>
+        <button id="mediumBtn">Normal</button>
+        <button id="hardBtn">Difícil</button>
+    </div>
+    <div id="game">
+        <div id="player"></div>
+        <div id="stars"></div>
+        <div id="obstacles"></div>
+        <div id="bottomLine"></div>
+        <div id="score">Puntuación: <span id="scoreValue">0</span></div>
+        <div id="lives">Vidas: <span id="livesValue">3</span></div>
+        <div id="gameOver">¡Juego terminado! <span id="finalScore"></span></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+    const startMenu = document.getElementById('startMenu');
+    const gameContainer = document.getElementById('game');
+    const player = document.getElementById('player');
+    const starsContainer = document.getElementById('stars');
+    const scoreValue = document.getElementById('scoreValue');
+    const livesValue = document.getElementById('livesValue');
+    const gameOverText = document.getElementById('gameOver');
+    const finalScore = document.getElementById('finalScore');
+
+    let score, lives, gameSpeed, gameIsOver, gameLoopInterval;
+
+    function updateScore() {
+        score++;
+        scoreValue.textContent = score;
+    }
+
+    function updateLives() {
+        lives--;
+        livesValue.textContent = lives;
+
+        if (lives <= 0) {
+            gameOver();
+        }
+    }
+
+    function gameOver() {
+        gameIsOver = true;
+        finalScore.textContent = `Puntuación final: ${score}`;
+        gameOverText.style.display = 'block';
+        clearInterval(gameLoopInterval);
+        // Redireccionar al menú después de un retraso
+        setTimeout(() => {
+            gameContainer.style.display = 'none';
+            startMenu.style.display = 'flex';
+        }, 3000); // 3000 milisegundos = 3 segundos
+    }
+    
+
+    function startGame(difficulty) {
+        // Ocultar la pantalla de juego terminado
+        gameOverText.style.display = 'none';
+        
+        // Restablecer el estado del juego
+        gameIsOver = false;
+        
+        // Reiniciar variables y estado del juego
+        score = 0;
+        lives = 3;
+        scoreValue.textContent = score;
+        livesValue.textContent = lives;
+    
+        // Limpiar cualquier estrella existente
+        starsContainer.innerHTML = '';
+    
+        // Ocultar el menú de inicio
+        startMenu.style.display = 'none';
+        // Mostrar el contenedor del juego
+        gameContainer.style.display = 'block';
+        
+        // Ejemplo de ajuste de velocidad y vidas
+        switch (difficulty) {
+            case 'easy':
+                gameSpeed = 3;
+                lives = 5;
+                break;
+            case 'medium':
+                gameSpeed = 5;
+                lives = 3;
+                break;
+            case 'hard':
+                gameSpeed = 8;
+                lives = 1;
+                break;
+            default:
+                gameSpeed = 5;
+                lives = 3;
+        }
+    
+        livesValue.textContent = lives;
+        
+        // Generar estrellas
+        gameLoopInterval = setInterval(() => {
+            createStar();
+        }, 2000);
+    }
+    
+    
+
+    // Agregar eventos de clic a los botones del menú de inicio
+    document.getElementById('easyBtn').addEventListener('click', function () {
+        startGame('easy');
+    });
+
+    document.getElementById('mediumBtn').addEventListener('click', function () {
+        startGame('medium');
+    });
+
+    document.getElementById('hardBtn').addEventListener('click', function () {
+        startGame('hard');
+    });
+
+    function createStar() {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = `${Math.random() * (window.innerWidth - 20)}px`;
+        star.style.top = '0'; // Start from top
+        starsContainer.appendChild(star);
+
+        const fallInterval = setInterval(() => {
+            if (!gameIsOver) {
+                const starTop = parseInt(window.getComputedStyle(star).getPropertyValue('top'));
+
+                if (starTop >= window.innerHeight) {
+                    clearInterval(fallInterval);
+                    star.remove();
+                    updateLives();
+                }
+
+                const starBounds = star.getBoundingClientRect();
+                const playerBounds = player.getBoundingClientRect();
+
+                if (
+                    starBounds.left < playerBounds.right &&
+                    starBounds.right > playerBounds.left &&
+                    starBounds.top < playerBounds.bottom &&
+                    starBounds.bottom > playerBounds.top
+                ) {
+                    updateScore();
+                    star.remove();
+                }
+
+                star.style.top = `${starTop + gameSpeed}px`;
+            } else {
+                clearInterval(fallInterval);
+            }
+        }, 20);
+    }
+
+    function movePlayer(key) {
+        if (!gameIsOver) {
+            if (key === 'ArrowLeft') {
+                const playerLeft = parseInt(window.getComputedStyle(player).getPropertyValue('left'));
+                const newLeft = Math.max(0, playerLeft - 10);
+                player.style.left = `${newLeft}px`;
+            } else if (key === 'ArrowRight') {
+                const playerLeft = parseInt(window.getComputedStyle(player).getPropertyValue('left'));
+                const playerWidth = parseInt(window.getComputedStyle(player).getPropertyValue('width'));
+                const newLeft = Math.min(window.innerWidth - playerWidth, playerLeft + 10);
+                player.style.left = `${newLeft}px`;
+            }
+        }
+    }
+
+    function followMouse(event) {
+        if (!gameIsOver) {
+            const gameWidth = parseInt(window.getComputedStyle(document.getElementById('game')).getPropertyValue('width'));
+            const playerWidth = parseInt(window.getComputedStyle(player).getPropertyValue('width'));
+            const mouseX = event.clientX;
+            const newLeft = Math.max(0, Math.min(gameWidth - playerWidth, mouseX - playerWidth / 2));
+            player.style.left = `${newLeft}px`;
+        }
+    }
+
+    document.addEventListener('keydown', function (event) {
+        movePlayer(event.key);
+    });
+
+    document.addEventListener('mousemove', followMouse);
+});
+
+    </script>
+</body>
+</html>
